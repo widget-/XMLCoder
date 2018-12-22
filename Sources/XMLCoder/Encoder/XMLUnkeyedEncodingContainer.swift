@@ -7,11 +7,11 @@
 
 import Foundation
 
-struct _XMLUnkeyedEncodingContainer: UnkeyedEncodingContainer {
+struct XMLUnkeyedEncodingContainer: UnkeyedEncodingContainer {
     // MARK: Properties
 
     /// A reference to the encoder we're writing to.
-    private let encoder: _XMLEncoder
+    private let encoder: XMLEncoderImplementation
 
     /// A reference to the container we're writing to.
     private let container: UnkeyedBox
@@ -27,7 +27,7 @@ struct _XMLUnkeyedEncodingContainer: UnkeyedEncodingContainer {
     // MARK: - Initialization
 
     /// Initializes `self` with the given references.
-    init(referencing encoder: _XMLEncoder, codingPath: [CodingKey], wrapping container: UnkeyedBox) {
+    init(referencing encoder: XMLEncoderImplementation, codingPath: [CodingKey], wrapping container: UnkeyedBox) {
         self.encoder = encoder
         self.codingPath = codingPath
         self.container = container
@@ -143,35 +143,35 @@ struct _XMLUnkeyedEncodingContainer: UnkeyedEncodingContainer {
 
     private mutating func encode<T: Encodable>(
         _ value: T,
-        encode: (_XMLEncoder, T) throws -> Box
+        encode: (XMLEncoderImplementation, T) throws -> Box
     ) rethrows {
-        encoder.codingPath.append(_XMLKey(index: count))
+        encoder.codingPath.append(XMLKey(index: count))
         defer { self.encoder.codingPath.removeLast() }
         container.append(try encode(encoder, value))
     }
 
     public mutating func nestedContainer<NestedKey>(keyedBy _: NestedKey.Type) -> KeyedEncodingContainer<NestedKey> {
-        codingPath.append(_XMLKey(index: count))
+        codingPath.append(XMLKey(index: count))
         defer { self.codingPath.removeLast() }
 
         let keyed = KeyedBox()
         self.container.append(keyed)
 
-        let container = _XMLKeyedEncodingContainer<NestedKey>(referencing: encoder, codingPath: codingPath, wrapping: keyed)
+        let container = XMLKeyedEncodingContainer<NestedKey>(referencing: encoder, codingPath: codingPath, wrapping: keyed)
         return KeyedEncodingContainer(container)
     }
 
     public mutating func nestedUnkeyedContainer() -> UnkeyedEncodingContainer {
-        codingPath.append(_XMLKey(index: count))
+        codingPath.append(XMLKey(index: count))
         defer { self.codingPath.removeLast() }
 
         let unkeyed = UnkeyedBox()
         container.append(unkeyed)
 
-        return _XMLUnkeyedEncodingContainer(referencing: encoder, codingPath: codingPath, wrapping: unkeyed)
+        return XMLUnkeyedEncodingContainer(referencing: encoder, codingPath: codingPath, wrapping: unkeyed)
     }
 
     public mutating func superEncoder() -> Encoder {
-        return _XMLReferencingEncoder(referencing: encoder, at: container.count, wrapping: container)
+        return XMLReferencingEncoder(referencing: encoder, at: container.count, wrapping: container)
     }
 }

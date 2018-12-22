@@ -7,13 +7,13 @@
 
 import Foundation
 
-struct _XMLKeyedEncodingContainer<K: CodingKey>: KeyedEncodingContainerProtocol {
+struct XMLKeyedEncodingContainer<K: CodingKey>: KeyedEncodingContainerProtocol {
     typealias Key = K
 
     // MARK: Properties
 
     /// A reference to the encoder we're writing to.
-    private let encoder: _XMLEncoder
+    private let encoder: XMLEncoderImplementation
 
     /// A reference to the container we're writing to.
     private let container: KeyedBox
@@ -24,7 +24,7 @@ struct _XMLKeyedEncodingContainer<K: CodingKey>: KeyedEncodingContainerProtocol 
     // MARK: - Initialization
 
     /// Initializes `self` with the given references.
-    init(referencing encoder: _XMLEncoder, codingPath: [CodingKey], wrapping container: KeyedBox) {
+    init(referencing encoder: XMLEncoderImplementation, codingPath: [CodingKey], wrapping container: KeyedBox) {
         self.encoder = encoder
         self.codingPath = codingPath
         self.container = container
@@ -38,7 +38,7 @@ struct _XMLKeyedEncodingContainer<K: CodingKey>: KeyedEncodingContainerProtocol 
             return key
         case .convertToSnakeCase:
             let newKeyString = XMLEncoder.KeyEncodingStrategy._convertToSnakeCase(key.stringValue)
-            return _XMLKey(stringValue: newKeyString, intValue: key.intValue)
+            return XMLKey(stringValue: newKeyString, intValue: key.intValue)
         case let .custom(converter):
             return converter(codingPath + [key])
         }
@@ -155,7 +155,7 @@ struct _XMLKeyedEncodingContainer<K: CodingKey>: KeyedEncodingContainerProtocol 
     private mutating func encode<T: Encodable>(
         _ value: T,
         forKey key: Key,
-        encode: (_XMLEncoder, T) throws -> Box
+        encode: (XMLEncoderImplementation, T) throws -> Box
     ) throws {
         defer {
             _ = self.encoder.nodeEncodings.removeLast()
@@ -192,7 +192,7 @@ struct _XMLKeyedEncodingContainer<K: CodingKey>: KeyedEncodingContainerProtocol 
         codingPath.append(key)
         defer { self.codingPath.removeLast() }
 
-        let container = _XMLKeyedEncodingContainer<NestedKey>(referencing: encoder, codingPath: codingPath, wrapping: keyed)
+        let container = XMLKeyedEncodingContainer<NestedKey>(referencing: encoder, codingPath: codingPath, wrapping: keyed)
         return KeyedEncodingContainer(container)
     }
 
@@ -202,14 +202,14 @@ struct _XMLKeyedEncodingContainer<K: CodingKey>: KeyedEncodingContainerProtocol 
 
         codingPath.append(key)
         defer { self.codingPath.removeLast() }
-        return _XMLUnkeyedEncodingContainer(referencing: encoder, codingPath: codingPath, wrapping: unkeyed)
+        return XMLUnkeyedEncodingContainer(referencing: encoder, codingPath: codingPath, wrapping: unkeyed)
     }
 
     public mutating func superEncoder() -> Encoder {
-        return _XMLReferencingEncoder(referencing: encoder, key: _XMLKey.super, convertedKey: _converted(_XMLKey.super), wrapping: container)
+        return XMLReferencingEncoder(referencing: encoder, key: XMLKey.super, convertedKey: _converted(XMLKey.super), wrapping: container)
     }
 
     public mutating func superEncoder(forKey key: Key) -> Encoder {
-        return _XMLReferencingEncoder(referencing: encoder, key: key, convertedKey: _converted(key), wrapping: container)
+        return XMLReferencingEncoder(referencing: encoder, key: key, convertedKey: _converted(key), wrapping: container)
     }
 }

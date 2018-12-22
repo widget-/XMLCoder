@@ -56,13 +56,15 @@ open class XMLDecoder {
                 }
 
                 guard let dateFormatter = try formatterForKey(codingKey) else {
-                    throw DecodingError.dataCorruptedError(in: container, debugDescription: "No date formatter for date text")
+                    throw DecodingError.dataCorruptedError(in: container,
+                                                           debugDescription: "No date formatter for date text")
                 }
 
                 if let date = dateFormatter.date(from: text) {
                     return date
                 } else {
-                    throw DecodingError.dataCorruptedError(in: container, debugDescription: "Cannot decode date string \(text)")
+                    throw DecodingError.dataCorruptedError(in: container,
+                                                           debugDescription: "Cannot decode date string \(text)")
                 }
             })
         }
@@ -120,9 +122,12 @@ open class XMLDecoder {
         /// Use the keys specified by each type. This is the default strategy.
         case useDefaultKeys
 
-        /// Convert from "snake_case_keys" to "camelCaseKeys" before attempting to match a key with the one specified by each type.
+        /// Convert from "snake_case_keys" to "camelCaseKeys" before attempting
+        /// to match a key with the one specified by each type.
         ///
-        /// The conversion to upper case uses `Locale.system`, also known as the ICU "root" locale. This means the result is consistent regardless of the current user's locale and language preferences.
+        /// The conversion to upper case uses `Locale.system`, also known as
+        /// the ICU "root" locale. This means the result is consistent
+        /// regardless of the current user's locale and language preferences.
         ///
         /// Converting from snake case to camel case:
         /// 1. Capitalizes the word starting after each `_`
@@ -136,9 +141,14 @@ open class XMLDecoder {
         /// Convert from "CodingKey" to "codingKey"
         case convertFromCapitalized
 
-        /// Provide a custom conversion from the key in the encoded XML to the keys specified by the decoded types.
-        /// The full path to the current decoding position is provided for context (in case you need to locate this key within the payload). The returned key is used in place of the last component in the coding path before decoding.
-        /// If the result of the conversion is a duplicate key, then only one box will be present in the container for the type to decode from.
+        /// Provide a custom conversion from the key in the encoded XML to the
+        /// keys specified by the decoded types.
+        /// The full path to the current decoding position is provided for
+        /// context (in case you need to locate this key within the payload).
+        /// The returned key is used in place of the last component in the
+        /// coding path before decoding.
+        /// If the result of the conversion is a duplicate key, then only one
+        /// box will be present in the container for the type to decode from.
         case custom((_ codingPath: [CodingKey]) -> CodingKey)
 
         static func _convertFromCapitalized(_ stringKey: String) -> String {
@@ -211,7 +221,7 @@ open class XMLDecoder {
     open var userInfo: [CodingUserInfoKey: Any] = [:]
 
     /// Options set on the top-level encoder to pass down the decoding hierarchy.
-    struct _Options {
+    struct Options {
         let dateDecodingStrategy: DateDecodingStrategy
         let dataDecodingStrategy: DataDecodingStrategy
         let nonConformingFloatDecodingStrategy: NonConformingFloatDecodingStrategy
@@ -220,8 +230,8 @@ open class XMLDecoder {
     }
 
     /// The options set on the top-level decoder.
-    var options: _Options {
-        return _Options(dateDecodingStrategy: dateDecodingStrategy,
+    var options: Options {
+        return Options(dateDecodingStrategy: dateDecodingStrategy,
                         dataDecodingStrategy: dataDecodingStrategy,
                         nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
                         keyDecodingStrategy: keyDecodingStrategy,
@@ -245,7 +255,7 @@ open class XMLDecoder {
     open func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
         let topLevel: Box
         do {
-            topLevel = try _XMLStackParser.parse(with: data)
+            topLevel = try XMLStackParser.parse(with: data)
         } catch {
             throw DecodingError.dataCorrupted(DecodingError.Context(
                 codingPath: [],
@@ -253,7 +263,7 @@ open class XMLDecoder {
             ))
         }
 
-        let decoder = _XMLDecoder(referencing: topLevel, options: options)
+        let decoder = XMLDecoderImplementation(referencing: topLevel, options: options)
 
         guard let box: T = try decoder.unbox(topLevel) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(
@@ -266,16 +276,14 @@ open class XMLDecoder {
     }
 }
 
-// MARK: - _XMLDecoder
-
-class _XMLDecoder: Decoder {
+class XMLDecoderImplementation: Decoder {
     // MARK: Properties
 
     /// The decoder's storage.
-    var storage: _XMLDecodingStorage
+    var storage: XMLDecodingStorage
 
     /// Options set on the top-level decoder.
-    let options: XMLDecoder._Options
+    let options: XMLDecoder.Options
 
     /// The path to the current point in encoding.
     public internal(set) var codingPath: [CodingKey]
@@ -288,8 +296,8 @@ class _XMLDecoder: Decoder {
     // MARK: - Initialization
 
     /// Initializes `self` with the given top-level container and options.
-    init(referencing container: Box, at codingPath: [CodingKey] = [], options: XMLDecoder._Options) {
-        storage = _XMLDecodingStorage()
+    init(referencing container: Box, at codingPath: [CodingKey] = [], options: XMLDecoder.Options) {
+        storage = XMLDecodingStorage()
         storage.push(container: container)
         self.codingPath = codingPath
         self.options = options
@@ -306,10 +314,12 @@ class _XMLDecoder: Decoder {
         }
 
         guard let keyed = storage.topContainer as? KeyedBox else {
-            throw DecodingError._typeMismatch(at: codingPath, expectation: [String: Any].self, reality: storage.topContainer)
+            throw DecodingError._typeMismatch(at: codingPath,
+                                              expectation: [String: Any].self,
+                                              reality: storage.topContainer)
         }
 
-        let container = _XMLKeyedDecodingContainer<Key>(referencing: self, wrapping: keyed)
+        let container = XMLKeyedDecodingContainer<Key>(referencing: self, wrapping: keyed)
         return KeyedDecodingContainer(container)
     }
 
@@ -323,7 +333,7 @@ class _XMLDecoder: Decoder {
 
         let unkeyed = (storage.topContainer as? UnkeyedBox) ?? UnkeyedBox([storage.topContainer])
 
-        return _XMLUnkeyedDecodingContainer(referencing: self, wrapping: unkeyed)
+        return XMLUnkeyedDecodingContainer(referencing: self, wrapping: unkeyed)
     }
 
     public func singleValueContainer() throws -> SingleValueDecodingContainer {
@@ -331,7 +341,7 @@ class _XMLDecoder: Decoder {
     }
 }
 
-extension _XMLDecoder: SingleValueDecodingContainer {
+extension XMLDecoderImplementation: SingleValueDecodingContainer {
     // MARK: SingleValueDecodingContainer Methods
 
     private func expectNonNull<T>(_ type: T.Type) throws {
@@ -395,7 +405,7 @@ extension _XMLDecoder: SingleValueDecodingContainer {
 
 // MARK: - Concrete Value Representations
 
-extension _XMLDecoder {
+extension XMLDecoderImplementation {
     /// Returns the given box unboxed from a container.
 
     func unbox(_ box: Box) throws -> Bool? {
@@ -592,20 +602,20 @@ extension _XMLDecoder {
     }
 
     func unbox<T: Decodable>(_ box: Box) throws -> T? {
-        let decoded: T
+        let decoded: T?
         let type = T.self
         if type == Date.self || type == NSDate.self {
             guard let date: Date = try unbox(box) else { return nil }
-            decoded = date as! T
+            decoded = date as? T
         } else if type == Data.self || type == NSData.self {
             guard let data: Data = try unbox(box) else { return nil }
-            decoded = data as! T
+            decoded = data as? T
         } else if type == URL.self || type == NSURL.self {
             guard let data: URL = try unbox(box) else { return nil }
-            decoded = data as! T
+            decoded = data as? T
         } else if type == Decimal.self || type == NSDecimalNumber.self {
             guard let decimal: Decimal = try unbox(box) else { return nil }
-            decoded = decimal as! T
+            decoded = decimal as? T
         } else {
             storage.push(container: box)
             defer { storage.popContainer() }

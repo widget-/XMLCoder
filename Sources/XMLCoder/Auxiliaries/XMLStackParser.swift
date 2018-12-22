@@ -10,12 +10,12 @@ import Foundation
 
 struct XMLElementContext {}
 
-class _XMLStackParser: NSObject {
-    var root: _XMLElement?
-    private var stack: [_XMLElement] = []
+class XMLStackParser: NSObject {
+    var root: XMLCoderElement?
+    private var stack: [XMLCoderElement] = []
 
     static func parse(with data: Data) throws -> KeyedBox {
-        let parser = _XMLStackParser()
+        let parser = XMLStackParser()
 
         guard let node = try parser.parse(with: data) else {
             throw DecodingError.dataCorrupted(DecodingError.Context(
@@ -27,7 +27,7 @@ class _XMLStackParser: NSObject {
         return node.flatten()
     }
 
-    func parse(with data: Data) throws -> _XMLElement? {
+    func parse(with data: Data) throws -> XMLCoderElement? {
         let xmlParser = XMLParser(data: data)
         xmlParser.delegate = self
 
@@ -41,7 +41,7 @@ class _XMLStackParser: NSObject {
         return root
     }
 
-    func withCurrentElement(_ body: (inout _XMLElement) throws -> Void) rethrows {
+    func withCurrentElement(_ body: (inout XMLCoderElement) throws -> Void) rethrows {
         guard !stack.isEmpty else {
             return
         }
@@ -49,14 +49,18 @@ class _XMLStackParser: NSObject {
     }
 }
 
-extension _XMLStackParser: XMLParserDelegate {
+extension XMLStackParser: XMLParserDelegate {
     func parserDidStartDocument(_: XMLParser) {
         root = nil
         stack = []
     }
 
-    func parser(_: XMLParser, didStartElement elementName: String, namespaceURI _: String?, qualifiedName _: String?, attributes attributeDict: [String: String] = [:]) {
-        let element = _XMLElement(key: elementName, attributes: attributeDict)
+    func parser(_: XMLParser,
+                didStartElement elementName: String,
+                namespaceURI _: String?,
+                qualifiedName _: String?,
+                attributes attributeDict: [String: String] = [:]) {
+        let element = XMLCoderElement(key: elementName, attributes: attributeDict)
         stack.append(element)
     }
 

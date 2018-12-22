@@ -105,8 +105,12 @@ open class XMLEncoder {
 
         /// Convert from "camelCaseKeys" to "snake_case_keys" before writing a key to XML payload.
         ///
-        /// Capital characters are determined by testing membership in `CharacterSet.uppercaseLetters` and `CharacterSet.lowercaseLetters` (Unicode General Categories Lu and Lt).
-        /// The conversion to lower case uses `Locale.system`, also known as the ICU "root" locale. This means the result is consistent regardless of the current user's locale and language preferences.
+        /// Capital characters are determined by testing membership in
+        /// `CharacterSet.uppercaseLetters` and `CharacterSet.lowercaseLetters`
+        /// (Unicode General Categories Lu and Lt).
+        /// The conversion to lower case uses `Locale.system`, also known as
+        /// the ICU "root" locale. This means the result is consistent
+        /// regardless of the current user's locale and language preferences.
         ///
         /// Converting from camel case to snake case:
         /// 1. Splits words at the boundary of lower-case to upper-case
@@ -119,16 +123,23 @@ open class XMLEncoder {
         /// - Note: Using a key encoding strategy has a nominal performance cost, as each string key has to be converted.
         case convertToSnakeCase
 
-        /// Provide a custom conversion to the key in the encoded XML from the keys specified by the encoded types.
-        /// The full path to the current encoding position is provided for context (in case you need to locate this key within the payload). The returned key is used in place of the last component in the coding path before encoding.
-        /// If the result of the conversion is a duplicate key, then only one value will be present in the result.
+        /// Provide a custom conversion to the key in the encoded XML from the
+        /// keys specified by the encoded types.
+        /// The full path to the current encoding position is provided for
+        /// context (in case you need to locate this key within the payload).
+        /// The returned key is used in place of the last component in the
+        /// coding path before encoding.
+        /// If the result of the conversion is a duplicate key, then only one
+        /// value will be present in the result.
         case custom((_ codingPath: [CodingKey]) -> CodingKey)
 
         static func _convertToSnakeCase(_ stringKey: String) -> String {
             guard !stringKey.isEmpty else { return stringKey }
 
             var words: [Range<String.Index>] = []
-            // The general idea of this algorithm is to split words on transition from lower to upper case, then on transition of >1 upper case characters to lowercase
+            // The general idea of this algorithm is to split words on
+            // transition from lower to upper case, then on transition of >1
+            // upper case characters to lowercase
             //
             // myProperty -> my_property
             // myURLProperty -> my_url_property
@@ -150,7 +161,9 @@ open class XMLEncoder {
                     break
                 }
 
-                // Is the next lowercase letter more than 1 after the uppercase? If so, we encountered a group of uppercase letters that we should treat as its own word
+                // Is the next lowercase letter more than 1 after the uppercase?
+                // If so, we encountered a group of uppercase letters that we
+                // should treat as its own word
                 let nextCharacterAfterCapital = stringKey.index(after: upperCaseRange.lowerBound)
                 if lowerCaseRange.lowerBound == nextCharacterAfterCapital {
                     // The next character after capital is a lower case character and therefore not a word boundary.
@@ -223,7 +236,7 @@ open class XMLEncoder {
     open var userInfo: [CodingUserInfoKey: Any] = [:]
 
     /// Options set on the top-level encoder to pass down the encoding hierarchy.
-    struct _Options {
+    struct Options {
         let dateEncodingStrategy: DateEncodingStrategy
         let dataEncodingStrategy: DataEncodingStrategy
         let nonConformingFloatEncodingStrategy: NonConformingFloatEncodingStrategy
@@ -234,8 +247,8 @@ open class XMLEncoder {
     }
 
     /// The options set on the top-level encoder.
-    var options: _Options {
-        return _Options(dateEncodingStrategy: dateEncodingStrategy,
+    var options: Options {
+        return Options(dateEncodingStrategy: dateEncodingStrategy,
                         dataEncodingStrategy: dataEncodingStrategy,
                         nonConformingFloatEncodingStrategy: nonConformingFloatEncodingStrategy,
                         keyEncodingStrategy: keyEncodingStrategy,
@@ -256,10 +269,12 @@ open class XMLEncoder {
     /// - parameter value: The value to encode.
     /// - parameter withRootKey: the key used to wrap the encoded values.
     /// - returns: A new `Data` value containing the encoded XML data.
-    /// - throws: `EncodingError.invalidValue` if a non-conforming floating-point value is encountered during encoding, and the encoding strategy is `.throw`.
+    /// - throws: `EncodingError.invalidValue` if a non-conforming
+    /// floating-point value is encountered during encoding, and the encoding
+    /// strategy is `.throw`.
     /// - throws: An error if any value throws an error during encoding.
     open func encode<T: Encodable>(_ value: T, withRootKey rootKey: String, header: XMLHeader? = nil) throws -> Data {
-        let encoder = _XMLEncoder(
+        let encoder = XMLEncoderImplementation(
             options: options,
             nodeEncodings: []
         )
@@ -267,12 +282,12 @@ open class XMLEncoder {
 
         let topLevel = try encoder.box(value)
 
-        let elementOrNone: _XMLElement?
+        let elementOrNone: XMLCoderElement?
 
         if let keyed = topLevel as? KeyedBox {
-            elementOrNone = _XMLElement(key: rootKey, box: keyed)
+            elementOrNone = XMLCoderElement(key: rootKey, box: keyed)
         } else if let unkeyed = topLevel as? UnkeyedBox {
-            elementOrNone = _XMLElement(key: rootKey, box: unkeyed)
+            elementOrNone = XMLCoderElement(key: rootKey, box: unkeyed)
         } else {
             fatalError("Unrecognized top-level element.")
         }
@@ -285,18 +300,21 @@ open class XMLEncoder {
         }
 
         let withCDATA = stringEncodingStrategy != .deferredToString
-        return element.toXMLString(with: header, withCDATA: withCDATA, formatting: outputFormatting).data(using: .utf8, allowLossyConversion: true)!
+        return element.toXMLString(with: header,
+                                   withCDATA: withCDATA,
+                                   formatting: outputFormatting)
+            .data(using: .utf8, allowLossyConversion: true)!
     }
 }
 
-class _XMLEncoder: Encoder {
+class XMLEncoderImplementation: Encoder {
     // MARK: Properties
 
     /// The encoder's storage.
-    var storage: _XMLEncodingStorage
+    var storage: XMLEncodingStorage
 
     /// Options set on the top-level encoder.
-    let options: XMLEncoder._Options
+    let options: XMLEncoder.Options
 
     /// The path to the current point in encoding.
     public var codingPath: [CodingKey]
@@ -312,12 +330,12 @@ class _XMLEncoder: Encoder {
 
     /// Initializes `self` with the given top-level encoder options.
     init(
-        options: XMLEncoder._Options,
+        options: XMLEncoder.Options,
         nodeEncodings: [(CodingKey) -> XMLEncoder.NodeEncoding],
         codingPath: [CodingKey] = []
     ) {
         self.options = options
-        storage = _XMLEncodingStorage()
+        storage = XMLEncodingStorage()
         self.codingPath = codingPath
         self.nodeEncodings = nodeEncodings
     }
@@ -326,12 +344,19 @@ class _XMLEncoder: Encoder {
     ///
     /// `true` if an element has not yet been encoded at this coding path; `false` otherwise.
     var canEncodeNewValue: Bool {
-        // Every time a new value gets encoded, the key it's encoded for is pushed onto the coding path (even if it's a nil key from an unkeyed container).
-        // At the same time, every time a container is requested, a new value gets pushed onto the storage stack.
-        // If there are more values on the storage stack than on the coding path, it means the value is requesting more than one container, which violates the precondition.
+        // Every time a new value gets encoded, the key it's encoded for is
+        // pushed onto the coding path (even if it's a nil key from an unkeyed container).
+        // At the same time, every time a container is requested, a new value
+        // gets pushed onto the storage stack.
+        // If there are more values on the storage stack than on the coding path,
+        // it means the value is requesting more than one container, which
+        // violates the precondition.
         //
-        // This means that anytime something that can request a new container goes onto the stack, we MUST push a key onto the coding path.
-        // Things which will not request containers do not need to have the coding path extended for them (but it doesn't matter if it is, because they will not reach here).
+        // This means that anytime something that can request a new container
+        // goes onto the stack, we MUST push a key onto the coding path.
+        // Things which will not request containers do not need to have the
+        // coding path extended for them (but it doesn't matter if it is,
+        // because they will not reach here).
         return storage.count == codingPath.count
     }
 
@@ -351,7 +376,7 @@ class _XMLEncoder: Encoder {
             topContainer = container
         }
 
-        let container = _XMLKeyedEncodingContainer<Key>(referencing: self, codingPath: codingPath, wrapping: topContainer)
+        let container = XMLKeyedEncodingContainer<Key>(referencing: self, codingPath: codingPath, wrapping: topContainer)
         return KeyedEncodingContainer(container)
     }
 
@@ -369,7 +394,7 @@ class _XMLEncoder: Encoder {
             topContainer = container
         }
 
-        return _XMLUnkeyedEncodingContainer(referencing: self, codingPath: codingPath, wrapping: topContainer)
+        return XMLUnkeyedEncodingContainer(referencing: self, codingPath: codingPath, wrapping: topContainer)
     }
 
     public func singleValueContainer() -> SingleValueEncodingContainer {
@@ -377,7 +402,7 @@ class _XMLEncoder: Encoder {
     }
 }
 
-extension _XMLEncoder: SingleValueEncodingContainer {
+extension XMLEncoderImplementation: SingleValueEncodingContainer {
     // MARK: - SingleValueEncodingContainer Methods
 
     func assertCanEncodeNewValue() {
@@ -465,7 +490,7 @@ extension _XMLEncoder: SingleValueEncodingContainer {
     }
 }
 
-extension _XMLEncoder {
+extension XMLEncoderImplementation {
     /// Returns the given value boxed in a container appropriate for pushing onto the container stack.
     func box() -> SimpleBox {
         return NullBox()
@@ -491,7 +516,9 @@ extension _XMLEncoder {
         guard value.isInfinite || value.isNaN else {
             return FloatBox(value)
         }
-        guard case let .convertToString(positiveInfinity: posInfString, negativeInfinity: negInfString, nan: nanString) = options.nonConformingFloatEncodingStrategy else {
+        guard case let .convertToString(positiveInfinity: posInfString,
+                                        negativeInfinity: negInfString,
+                                        nan: nanString) = options.nonConformingFloatEncodingStrategy else {
             throw EncodingError._invalidFloatingPointValue(value, at: codingPath)
         }
         if value == T.infinity {
@@ -551,15 +578,19 @@ extension _XMLEncoder {
         return URLBox(value)
     }
 
-    internal func box<T: Encodable>(_ value: T) throws -> Box {
-        if T.self == Date.self || T.self == NSDate.self {
-            return try box(value as! Date)
-        } else if T.self == Data.self || T.self == NSData.self {
-            return try box(value as! Data)
-        } else if T.self == URL.self || T.self == NSURL.self {
-            return box(value as! URL)
-        } else if T.self == Decimal.self || T.self == NSDecimalNumber.self {
-            return box(value as! Decimal)
+    func box<T: Encodable>(_ value: T) throws -> Box {
+        if T.self == Date.self || T.self == NSDate.self,
+        let value = value as? Date {
+            return try box(value)
+        } else if T.self == Data.self || T.self == NSData.self,
+        let value = value as? Data {
+            return try box(value)
+        } else if T.self == URL.self || T.self == NSURL.self,
+        let value = value as? URL {
+            return box(value)
+        } else if T.self == Decimal.self || T.self == NSDecimalNumber.self,
+        let value = value as? Decimal {
+            return box(value)
         }
 
         let depth = storage.count

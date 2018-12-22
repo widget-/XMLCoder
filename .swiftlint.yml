@@ -1,0 +1,11 @@
+disabled_rules:
+- trailing_comma
+- identifier_name
+- private_over_fileprivate
+
+line_length:
+- 150
+- 200
+
+function_body_length:
+- 50
