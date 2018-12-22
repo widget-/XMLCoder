@@ -6,10 +6,11 @@ env:
 before_install:
 - gem install cocoapods --pre # Since Travis is not always on latest version
 - brew update
-- brew install swiftformat
+- brew install swiftformat swiftlint
 - brew outdated carthage || brew upgrade carthage
 script:
 - swiftformat --lint --verbose .
+- swiftlint
 - pod lib lint
 - xcodebuild test -enableCodeCoverage YES -scheme XMLCoder
 before_deploy:
