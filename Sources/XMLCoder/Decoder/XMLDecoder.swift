@@ -232,10 +232,10 @@ open class XMLDecoder {
     /// The options set on the top-level decoder.
     var options: Options {
         return Options(dateDecodingStrategy: dateDecodingStrategy,
-                        dataDecodingStrategy: dataDecodingStrategy,
-                        nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
-                        keyDecodingStrategy: keyDecodingStrategy,
-                        userInfo: userInfo)
+                       dataDecodingStrategy: dataDecodingStrategy,
+                       nonConformingFloatDecodingStrategy: nonConformingFloatDecodingStrategy,
+                       keyDecodingStrategy: keyDecodingStrategy,
+                       userInfo: userInfo)
     }
 
     // MARK: - Constructing a XML Decoder

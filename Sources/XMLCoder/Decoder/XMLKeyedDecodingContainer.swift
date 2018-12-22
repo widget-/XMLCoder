@@ -195,8 +195,8 @@ struct XMLKeyedDecodingContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
         let elementNotFound = (container.elements[key.stringValue] == nil)
 
         if let type = type as? AnyEmptySequence.Type,
-        attributeNotFound && elementNotFound,
-        let result = type.init() as? T {
+            attributeNotFound, elementNotFound,
+            let result = type.init() as? T {
             return result
         }
 
@@ -206,21 +206,21 @@ struct XMLKeyedDecodingContainer<K: CodingKey>: KeyedDecodingContainerProtocol {
     }
 
     private func decodeSignedInteger<T>(_ type: T.Type, forKey key: Key) throws -> T
-    where T: BinaryInteger & SignedInteger & Decodable {
+        where T: BinaryInteger & SignedInteger & Decodable {
         return try decode(type, forKey: key) { decoder, box in
             try decoder.unbox(box)
         }
     }
 
     private func decodeUnsignedInteger<T>(_ type: T.Type, forKey key: Key) throws -> T
-    where T: BinaryInteger & UnsignedInteger & Decodable {
+        where T: BinaryInteger & UnsignedInteger & Decodable {
         return try decode(type, forKey: key) { decoder, box in
             try decoder.unbox(box)
         }
     }
 
     private func decodeFloatingPoint<T>(_ type: T.Type, forKey key: Key) throws -> T
-    where T: BinaryFloatingPoint & Decodable {
+        where T: BinaryFloatingPoint & Decodable {
         return try decode(type, forKey: key) { decoder, box in
             try decoder.unbox(box)
         }

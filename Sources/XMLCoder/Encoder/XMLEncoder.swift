@@ -249,12 +249,12 @@ open class XMLEncoder {
     /// The options set on the top-level encoder.
     var options: Options {
         return Options(dateEncodingStrategy: dateEncodingStrategy,
-                        dataEncodingStrategy: dataEncodingStrategy,
-                        nonConformingFloatEncodingStrategy: nonConformingFloatEncodingStrategy,
-                        keyEncodingStrategy: keyEncodingStrategy,
-                        nodeEncodingStrategy: nodeEncodingStrategy,
-                        stringEncodingStrategy: stringEncodingStrategy,
-                        userInfo: userInfo)
+                       dataEncodingStrategy: dataEncodingStrategy,
+                       nonConformingFloatEncodingStrategy: nonConformingFloatEncodingStrategy,
+                       keyEncodingStrategy: keyEncodingStrategy,
+                       nodeEncodingStrategy: nodeEncodingStrategy,
+                       stringEncodingStrategy: stringEncodingStrategy,
+                       userInfo: userInfo)
     }
 
     // MARK: - Constructing a XML Encoder
@@ -580,16 +580,16 @@ extension XMLEncoderImplementation {
 
     func box<T: Encodable>(_ value: T) throws -> Box {
         if T.self == Date.self || T.self == NSDate.self,
-        let value = value as? Date {
+            let value = value as? Date {
             return try box(value)
         } else if T.self == Data.self || T.self == NSData.self,
-        let value = value as? Data {
+            let value = value as? Data {
             return try box(value)
         } else if T.self == URL.self || T.self == NSURL.self,
-        let value = value as? URL {
+            let value = value as? URL {
             return box(value)
         } else if T.self == Decimal.self || T.self == NSDecimalNumber.self,
-        let value = value as? Decimal {
+            let value = value as? Decimal {
             return box(value)
         }
 
